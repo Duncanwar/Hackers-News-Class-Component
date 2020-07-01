@@ -8,6 +8,7 @@ const PATH_BASE = 'https://hn.algolia.com/api/v1';
 const PATH_SEARCH = '/search';
 const PARAM_SEARCH = 'query=';
 const PARAM_PAGE = 'page=';
+const PARAM_HPP = 'hitsPerPage=';
 
 class App extends Component {
 
@@ -15,12 +16,13 @@ class App extends Component {
     super(props);
 
     this.state = {
-      error: null,
       results: null,
-      searchKey:'',
+      searchKey: '',
       searchTerm: DEFAULT_QUERY,
+      error: null
     };
-    this.needsToSearchTopStories = this.needsToSearchTopStories.bind(this);
+
+    this.needsToSearchTopstories = this.needsToSearchTopstories.bind(this);
     this.setSearchTopstories = this.setSearchTopstories.bind(this);
     this.fetchSearchTopstories = this.fetchSearchTopstories.bind(this);
     this.onSearchChange = this.onSearchChange.bind(this);
@@ -28,16 +30,18 @@ class App extends Component {
     this.onDismiss = this.onDismiss.bind(this);
   }
 
-  needsToSearchTopStories(searchTerm){
-    return !this.state.results[searchTerm];
+  componentDidMount() {
+    const { searchTerm } = this.state;
+    this.setState({ searchKey: searchTerm });
+    this.fetchSearchTopstories(searchTerm);
   }
+
   setSearchTopstories(result) {
     const { hits, page } = result;
-    const {searchKey, results} = this.state;
-
+    const { searchKey, results } = this.state;
 
     const oldHits = results && results[searchKey]
-      ? this.state.result.hits
+      ? results[searchKey].hits
       : [];
 
     const updatedHits = [
@@ -46,21 +50,22 @@ class App extends Component {
     ];
 
     this.setState({
-      result: { hits: updatedHits, page }
+      results: {
+        ...results,
+        [searchKey]: { hits: updatedHits, page }
+      }
     });
   }
 
   fetchSearchTopstories(searchTerm, page = 0) {
-    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`)
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}&${PARAM_HPP}${DEFAULT_HPP}`)
       .then(response => response.json())
       .then(result => this.setSearchTopstories(result))
-    	.catch(error=>this.setState({error}));
+    	.catch(e => this.setState({ error: e }));
   }
 
-  componentDidMount() {
-    const { searchTerm } = this.state;
-    this.setState({searchKey: searchTerm})
-    this.fetchSearchTopstories(searchTerm);
+  needsToSearchTopstories(searchTerm) {
+    return !this.state.results[searchTerm];
   }
 
   onSearchChange(event) {
@@ -69,39 +74,51 @@ class App extends Component {
 
   onSearchSubmit(event) {
     const { searchTerm } = this.state;
-    this.setState({searchKey: searchTerm});
-    this.fetchSearchTopstories(searchTerm);
-    if(this.needsToSearchTopStories(searchTerm)){
+    this.setState({ searchKey: searchTerm });
+
+    if (this.needsToSearchTopstories(searchTerm)) {
       this.fetchSearchTopstories(searchTerm);
     }
+
     event.preventDefault();
   }
 
   onDismiss(id) {
-    const {searchKey, results} = this.state;
-    const {hits,page} = results[searchKey];
+    const { searchKey, results } = this.state;
+    const { hits, page } = results[searchKey];
+
     const isNotId = item => item.objectID !== id;
     const updatedHits = hits.filter(isNotId);
+
     this.setState({
       results: {
-         ...results,[searchKey]:{ hits: updatedHits, page} }
+        ...results,
+        [searchKey]: { hits: updatedHits, page }
+      }
     });
   }
 
   render() {
-    const { searchTerm, results,searchKey
-    ,error } = this.state;
-    const page = (results && results.page && results[searchKey].page) || 0;
+    const {
+      searchTerm,
+      results,
+      searchKey,
+      error
+    } = this.state;
+
+    const page = (
+      results &&
+      results[searchKey] &&
+      results[searchKey].page
+    ) || 0;
+
     const list = (
       results &&
       results[searchKey] &&
       results[searchKey].hits
     ) || [];
-    if(error){
-      return <p>Something Wrong</p>
-    }
+
     return (
-   
       <div className="page">
         <div className="interactions">
           <Search
@@ -112,12 +129,15 @@ class App extends Component {
             Search
           </Search>
         </div>
-   
-          <Table
+        { error
+          ? <div className="interactions">
+            <p>Something went wrong.</p>
+          </div>
+          : <Table
             list={list}
             onDismiss={this.onDismiss}
           />
-        
+        }
         <div className="interactions">
           <Button onClick={() => this.fetchSearchTopstories(searchKey, page + 1)}>
             More
@@ -127,7 +147,6 @@ class App extends Component {
     );
   }
 }
-
 
 const Search = ({
   value,
