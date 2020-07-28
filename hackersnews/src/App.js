@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 require('./App.css');
 
 const DEFAULT_QUERY = 'redux';
@@ -192,8 +193,17 @@ const Table = ({ list, onDismiss }) =>
       </div>
     )}
   </div>
+  Table.propTypes = {
+    list: PropTypes.arrayOf(
+      PropTypes.shape({
+        objectID: PropTypes.string.isRequired,
+        author: PropTypes.string
+      }).isRequired,
+    ),
+    onDismiss: PropTypes.func.isRequired,
+  };
 
-const Button = ({ onClick, className = '', children }) =>
+const Button = ({ onClick, className, children }) =>
   <button
     onClick={onClick}
     className={className}
@@ -202,4 +212,19 @@ const Button = ({ onClick, className = '', children }) =>
     {children}
   </button>
 
+  Button.propTypes = {
+    onClick:PropTypes.func.isRequired,
+    className: PropTypes.string,
+    children: PropTypes.node.isRequired,
+  }
+Button.defaultProps ={
+  className : ''
+}
+
 export default App;
+
+export {
+  Button,
+  Search,
+  Table,
+};

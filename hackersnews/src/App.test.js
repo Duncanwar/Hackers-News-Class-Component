@@ -1,9 +1,23 @@
 import React from 'react';
-import { render } from '@testing-library/react';
-import App from './App';
+import ReactDOM from 'react-dom';
+import renderer from  'react-test-renderer';
+import Enzyme from 'enzyme'
+import Adapter from 'enzyme-adapter-react-16';
+import App, {Button,Search,Table} from './App';
 
-test('renders learn react link', () => {
-  const { getByText } = render(<App />);
-  const linkElement = getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+Enzyme.configure({adapter: new Adapter()});
+
+describe('Button', () => {
+it('renders without crashing', () => {
+  const div = document.createElement('div');
+  ReactDOM.render(<Button>More</Button>, div);
+  ReactDOM.unmountComponentAtNode(div);
 });
+test('has a valid snapshot', () => {
+  const component = renderer.create(
+    <Button>More</Button>
+  );
+  const tree = component.toJSON();
+  expect(tree).toMatchSnapshot();
+})
+})
